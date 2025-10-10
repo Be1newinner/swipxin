@@ -10,7 +10,7 @@ import {
 
 // Components
 import { Onboarding } from "./Onboarding";
-import Auth from "./Auth";
+import Auth from "../app/(public)/auth/page";
 // import { AuthSupabase } from "./AuthSupabase";
 import { Home } from "./Home";
 import { CountrySelect } from "./CountrySelect";
@@ -81,7 +81,7 @@ function RouteWrapper({
   return (
     <Routes>
       {/* Auth routes */}
-      <Route
+      {/* <Route
         path="/auth"
         element={
           isAuthenticated ? (
@@ -90,8 +90,8 @@ function RouteWrapper({
             <Auth login={login} register={register} state={state} />
           )
         }
-      />
-      <Route
+      /> */}
+      {/* <Route
         path="/chat"
         element={
           isAuthenticated ? (
@@ -100,7 +100,7 @@ function RouteWrapper({
             <Auth login={login} register={register} state={state} />
           )
         }
-      />
+      /> */}
 
       {/* Onboarding */}
       <Route
