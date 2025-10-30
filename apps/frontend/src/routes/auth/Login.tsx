@@ -26,7 +26,7 @@ import { isAxiosError } from "axios";
 
 // Validation schema
 const loginSchema = z.object({
-  email: z.string().email("Enter a valid email"),
+  email: z.email("Enter a valid email"),
   password: z.string().min(8, "At least 8 characters"),
   remember: z.boolean().optional(),
 });
@@ -38,8 +38,8 @@ export default function AuthLogin() {
   const [loading, setLoading] = useState(false);
   const [showPass, setShowPass] = useState(false);
   const [form, setForm] = useState<LoginForm>({
-    email: "",
-    password: "",
+    email: "jane@example.com",
+    password: "password123",
     remember: true,
   });
   const login = useAppStore((s) => s.login);

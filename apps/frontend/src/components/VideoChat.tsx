@@ -324,7 +324,7 @@ export function VideoChat({ match, currentUser, onEndCall }) {
 
       // getUserMedia
       console.log("📹 Getting media...");
-      const stream = await navigator.mediaDevices.getUserMedia({
+      const stream = await navigator.mediaDevices?.getUserMedia({
         video: {
           width: { ideal: 1280 },
           height: { ideal: 720 },
