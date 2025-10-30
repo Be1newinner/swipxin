@@ -1,6 +1,7 @@
 import { query } from '../config/database.js';
 import { NextFunction, Request, Response } from 'express';
 import { decodeToken } from '@/utils/jwt.js';
+import { ExtendedError } from 'socket.io';
 
 // JWT Authentication middleware
 export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
@@ -17,11 +18,11 @@ export const authenticateToken = async (req: Request, res: Response, next: NextF
 
     // Verify the token
     const decoded = decodeToken(token);
-
+    console.log("DECODED", decoded)
     // Get user from database
     const result = await query(
       'SELECT id, email, name, age, country, gender, preferred_gender, avatar_url, is_premium, tokens, is_online, last_seen, total_calls FROM users WHERE id = $1',
-      [decoded.userId]
+      [decoded.sub]
     );
 
     if (result.rows.length === 0) {
@@ -66,7 +67,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
       const decoded = decodeToken(token);
       const result = await query(
         'SELECT id, email, name, age, country, gender, preferred_gender, avatar_url, is_premium, tokens, is_online, last_seen, total_calls FROM users WHERE id = $1',
-        [decoded.userId]
+        [decoded.sub]
       );
 
       if (result.rows.length > 0) {
@@ -83,7 +84,7 @@ export const optionalAuth = async (req: Request, res: Response, next: NextFuncti
 
 // Socket.IO authentication middleware
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
-export const socketAuth = async (socket: any, next: NextFunction) => {
+export const socketAuth = async (socket: any, next: (err?: ExtendedError) => void) => {
   try {
     const token = socket.handshake.auth.token;
 
@@ -92,11 +93,15 @@ export const socketAuth = async (socket: any, next: NextFunction) => {
     }
 
     const decoded = decodeToken(token);
+    console.log("DECODED", decoded)
 
     const result = await query(
       'SELECT id, email, name, age, country, gender, preferred_gender, avatar_url, is_premium, tokens, is_online FROM users WHERE id = $1',
-      [decoded.userId]
+      [decoded.sub]
     );
+
+    console.log(result.rowCount)
+    console.log(result.rows[0])
 
     if (result.rows.length === 0) {
       throw new Error('User not found');
