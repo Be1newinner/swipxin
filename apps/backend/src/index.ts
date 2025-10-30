@@ -7,10 +7,19 @@ import helmet from "helmet";
 import rateLimit from "express-rate-limit";
 import { query } from "./config/database";
 import { socketAuth } from "./middleware/auth";
+// import fs from 'fs';
+// import https from 'https';
 
 // Import routes
 import authRoutes from "./routes/auth";
 import matchingRoutes from "./routes/matching";
+
+
+// Load SSL certificates
+// const options = {
+//   key: fs.readFileSync('localhost-key.pem'),
+//   cert: fs.readFileSync('localhost.pem')
+// };
 
 // Configuration
 const PORT = 5002;
@@ -786,8 +795,10 @@ app.use((req, res) => {
   });
 });
 
+
 // Start server
-server.listen(PORT, () => {
+// https.createServer(options, app).listen(PORT, () => {
+app.listen(PORT, "0.0.0.0", () => {
   console.log(`\u2728 SwipX Backend server running on port ${PORT}`);
   console.log(`\ud83c\udf10 Environment: development`);
   console.log(`\ud83d\udcca Health check: http://localhost:${PORT}/health`);

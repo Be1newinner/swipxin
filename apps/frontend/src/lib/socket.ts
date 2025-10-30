@@ -120,7 +120,7 @@ class SocketService {
   on(event, callback) {
     if (this.socket) {
       this.socket.on(event, callback);
-
+      
       // Store listener for cleanup
       if (!this.eventListeners.has(event)) {
         this.eventListeners.set(event, []);
@@ -132,7 +132,7 @@ class SocketService {
   off(event, callback) {
     if (this.socket) {
       this.socket.off(event, callback);
-
+      
       // Remove from stored listeners
       if (this.eventListeners.has(event)) {
         const listeners = this.eventListeners.get(event);
