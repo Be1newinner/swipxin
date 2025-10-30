@@ -12,7 +12,7 @@ export default defineConfig({
     },
   },
   server: {
-    allowedHosts: ["firefly-top-jackal.ngrok-free.app"],
+    allowedHosts: ["firefly-top-jackal.ngrok-free.app", "api.shipsar.in"],
     port: 3000,       // change port
     strictPort: true, // fail if taken instead of auto-increment
     host: true        // listen on LAN (0.0.0.0); optional
