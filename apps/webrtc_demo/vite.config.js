@@ -6,6 +6,6 @@ export default defineConfig({
   plugins: [react()],
   server: {
     host: "0.0.0.0",
-    allowedHosts: ["firefly-top-jackal.ngrok-free.app"],
+    allowedHosts: ["firefly-top-jackal.ngrok-free.app", "api.shipsar.in"],
   },
 });
