@@ -203,7 +203,7 @@ router.post("/login", loginValidation, async (req, res) => {
     user.is_online = true;
     user.last_seen = new Date().toISOString();
 
-    res.json({
+    res.cookie("swipx-token", token).json({
       success: true,
       message: "Login successful! Welcome back!",
       data: {

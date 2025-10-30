@@ -1,4 +1,4 @@
-// app/components/auth/auth-register.tsx
+// app/components/login/login-register.tsx
 "use client";
 
 import React, { useMemo, useState } from "react";
@@ -37,6 +37,7 @@ import {
   Calendar,
   LogIn,
 } from "lucide-react";
+import { isAxiosError } from "axios";
 
 // Validation
 const registerSchema = z.object({
@@ -58,12 +59,14 @@ const verifySchema = z.object({
   code: z.string().min(4, "Enter the code sent to email"),
 });
 
+type RegisterForm = z.infer<typeof registerSchema>;
+type VerifyForm = z.infer<typeof verifySchema>;
+
 export default function AuthRegister() {
-  const [step, setStep] =
-    (useState < "register") | "verify" | ("done" > "register");
+  const [step, setStep] = useState<"register" | "verify" | "done">("register");
   const [loading, setLoading] = useState(false);
 
-  const [registerForm, setRegisterForm] = useState({
+  const [registerForm, setRegisterForm] = useState<RegisterForm>({
     email: "",
     password: "",
     name: "",
@@ -72,35 +75,40 @@ export default function AuthRegister() {
     country: "",
   });
 
-  const [verifyForm, setVerifyForm] = useState({
+  const [verifyForm, setVerifyForm] = useState<VerifyForm>({
     email: "",
     code: "",
   });
 
-  const registerErrors = useMemo(() => {
-    const res = registerSchema.safeParse(registerForm);
-    if (res.success) return {};
-    return res.error.formErrors.fieldErrors;
+  type RegisterErrors = Partial<Record<keyof RegisterForm, string[]>>;
+  type VerifyErrors = Partial<Record<keyof VerifyForm, string[]>>;
+
+  const registerErrors = useMemo<RegisterErrors>(() => {
+    const parsed = registerSchema.safeParse(registerForm);
+    if (parsed.success) return {};
+    const { fieldErrors } = parsed.error.flatten();
+    return fieldErrors as RegisterErrors;
   }, [registerForm]);
 
-  const verifyErrors = useMemo(() => {
-    const res = verifySchema.safeParse(verifyForm);
-    if (res.success) return {};
-    return res.error.formErrors.fieldErrors;
+  const verifyErrors = useMemo<VerifyErrors>(() => {
+    const parsed = verifySchema.safeParse(verifyForm);
+    if (parsed.success) return {};
+    const { fieldErrors } = parsed.error.flatten();
+    return fieldErrors as VerifyErrors;
   }, [verifyForm]);
 
   // Handlers
-  const onRegisterChange = (e) => {
+  const onRegisterChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setRegisterForm((s) => ({ ...s, [name]: value }));
   };
 
-  const onVerifyChange = (e) => {
+  const onVerifyChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     setVerifyForm((s) => ({ ...s, [name]: value }));
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = registerSchema.safeParse(registerForm);
     if (!parsed.success) {
@@ -124,18 +132,20 @@ export default function AuthRegister() {
       } else {
         toast.error(res.data?.message || "Registration failed");
       }
-    } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Registration error";
+    } catch (error: unknown) {
+      let message = "Registration error";
+      if (isAxiosError<{ message?: string }>(error)) {
+        message = error.response?.data?.message ?? error.message ?? message;
+      } else if (error instanceof Error) {
+        message = error.message ?? message;
+      }
       toast.error(message);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleVerify = async (e) => {
+  const handleVerify = async (e: React.FormEvent) => {
     e.preventDefault();
     const parsed = verifySchema.safeParse(verifyForm);
     if (!parsed.success) {
@@ -154,11 +164,13 @@ export default function AuthRegister() {
       } else {
         toast.error(res.data?.message || "Verification failed");
       }
-    } catch (error) {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        "Verification error";
+    } catch (error: unknown) {
+      let message = "Verification error";
+      if (isAxiosError<{ message?: string }>(error)) {
+        message = error.response?.data?.message ?? error.message ?? message;
+      } else if (error instanceof Error) {
+        message = error.message ?? message;
+      }
       toast.error(message);
     } finally {
       setLoading(false);
@@ -170,7 +182,7 @@ export default function AuthRegister() {
   };
 
   return (
-    <div className="mx-auto w-full max-w-lg p-4 sm:p-6">
+    <div className="mx-auto w-full p-4 sm:max-w-2xl">
       <Card className="border-none shadow-lg ring-1 ring-border">
         <CardHeader className="space-y-2">
           <CardTitle className="text-2xl tracking-tight">
@@ -283,7 +295,10 @@ export default function AuthRegister() {
                   <Select
                     value={registerForm.gender}
                     onValueChange={(v) =>
-                      setRegisterForm((s) => ({ ...s, gender: v }))
+                      setRegisterForm((s) => ({
+                        ...s,
+                        gender: v as RegisterForm["gender"],
+                      }))
                     }
                   >
                     <SelectTrigger>
@@ -320,17 +335,17 @@ export default function AuthRegister() {
 
               <Separator />
 
-              <div className="grid gap-3">
+              <div className="grid gap-3 text-black">
                 <Button type="submit" disabled={loading}>
                   {loading ? (
-                    <span className="inline-flex items-center gap-2">
-                      <Loader2 className="h-4 w-4 animate-spin" />
+                    <span className="inline-flex items-center gap-2 text-black">
+                      <Loader2 className="h-4 w-4 animate-spin text-black" />
                       Creating account...
                     </span>
                   ) : (
-                    <span className="inline-flex items-center gap-2">
+                    <span className="inline-flex items-center gap-">
                       <ShieldCheck className="h-4 w-4" />
-                      Create account
+                      Register
                     </span>
                   )}
                 </Button>

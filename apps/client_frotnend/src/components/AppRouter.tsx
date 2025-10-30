@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // import React, { useEffect } from "react";
 import {
   BrowserRouter,
@@ -10,8 +11,9 @@ import {
 
 // Components
 import { Onboarding } from "./Onboarding";
-import Auth from "./Auth";
-// import { AuthSupabase } from "./AuthSupabase";
+import RegisterPage from "../routes/auth/Register";
+import Login from "../routes/auth/Login";
+// import { AuthSupabase } from "./loginSupabase";
 import { Home } from "./Home";
 import { CountrySelect } from "./CountrySelect";
 import { GenderSelect } from "./GenderSelect";
@@ -20,6 +22,7 @@ import { VideoCall } from "./VideoCall";
 import { Wallet } from "./Wallet";
 import { Plans } from "./Plans";
 import { Settings } from "./Settings";
+import type { User } from "@/store/useAppStore";
 
 // Route wrapper component to sync URL with app state
 function RouteWrapper({
@@ -28,13 +31,20 @@ function RouteWrapper({
   hasSeenOnboarding,
   isSupabaseEnabled,
   updateUser,
-  login,
-  register,
   logout,
   toggleDarkMode,
   completeOnboarding,
   isDarkMode,
-  state,
+}: {
+  user: User;
+  isAuthenticated: boolean;
+  hasSeenOnboarding: boolean;
+  isSupabaseEnabled: boolean;
+  updateUser: any;
+  logout: any;
+  toggleDarkMode: any;
+  completeOnboarding: any;
+  isDarkMode: boolean;
 }) {
   const navigate = useNavigate();
   // const location = useLocation();
@@ -43,8 +53,8 @@ function RouteWrapper({
   const navigateTo = (screen) => {
     const routeMap = {
       onboarding: "/onboarding",
-      auth: "/auth",
-      "auth-supabase": "/auth",
+      auth: "/login",
+      "auth-supabase": "/login",
       home: "/",
       "video-call": "/video-call",
       matching: "/matching",
@@ -64,17 +74,17 @@ function RouteWrapper({
   //   // This ensures navigation state is properly handled
   //   const currentPath = location.pathname;
   //   const screenMap = {
-  //     '/': 'home',
-  //     '/auth': 'auth',
-  //     '/chat': 'auth',
-  //     '/video-call': 'video-call',
-  //     '/matching': 'matching',
-  //     '/wallet': 'wallet',
-  //     '/plans': 'plans',
-  //     '/settings': 'settings',
-  //     '/country-select': 'country-select',
-  //     '/gender-select': 'gender-select',
-  //     '/onboarding': 'onboarding'
+  //     "/": "home",
+  //     "/login": "auth",
+  //     "/chat": "auth",
+  //     "/video-call": "video-call",
+  //     "/matching": "matching",
+  //     "/wallet": "wallet",
+  //     "/plans": "plans",
+  //     "/settings": "settings",
+  //     "/country-select": "country-select",
+  //     "/gender-select": "gender-select",
+  //     "/onboarding": "onboarding",
   //   };
   // }, [location.pathname]);
 
@@ -82,23 +92,17 @@ function RouteWrapper({
     <Routes>
       {/* Auth routes */}
       <Route
-        path="/auth"
-        element={
-          isAuthenticated ? (
-            <Navigate to="/" replace />
-          ) : (
-            <Auth login={login} register={register} state={state} />
-          )
-        }
+        path="/login"
+        element={!isAuthenticated ? <Login /> : <Navigate to="/" replace />}
       />
       <Route
         path="/chat"
+        element={isAuthenticated ? <Navigate to="/" replace /> : <Login />}
+      />
+      <Route
+        path="/register"
         element={
-          isAuthenticated ? (
-            <Navigate to="/" replace />
-          ) : (
-            <Auth login={login} register={register} state={state} />
-          )
+          isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />
         }
       />
 
@@ -107,7 +111,7 @@ function RouteWrapper({
         path="/onboarding"
         element={
           hasSeenOnboarding ? (
-            <Navigate to={isAuthenticated ? "/" : "/auth"} replace />
+            <Navigate to={isAuthenticated ? "/" : "/login"} replace />
           ) : (
             <Onboarding onComplete={completeOnboarding} />
           )
@@ -121,7 +125,7 @@ function RouteWrapper({
           !hasSeenOnboarding ? (
             <Navigate to="/onboarding" replace />
           ) : !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <Home
               user={user}
@@ -138,13 +142,12 @@ function RouteWrapper({
         path="/video-call"
         element={
           !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <VideoCall
               user={user}
-              updateUser={updateUser}
               navigateTo={navigateTo}
-              isSupabaseEnabled={isSupabaseEnabled}
+              onDurationUpdate={null}
             />
           )
         }
@@ -154,12 +157,12 @@ function RouteWrapper({
         path="/matching"
         element={
           !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <Matching
               user={user}
               selectedCountry={user?.country}
-              selectedGender={user?.preferredGender}
+              selectedGender={user?.preferred_gender}
               navigateTo={navigateTo}
               isSupabaseEnabled={isSupabaseEnabled}
             />
@@ -171,7 +174,7 @@ function RouteWrapper({
         path="/wallet"
         element={
           !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <Wallet
               user={user}
@@ -186,7 +189,7 @@ function RouteWrapper({
         path="/plans"
         element={
           !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <Plans
               user={user}
@@ -201,7 +204,7 @@ function RouteWrapper({
         path="/settings"
         element={
           !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <Settings
               user={user}
@@ -219,11 +222,11 @@ function RouteWrapper({
         path="/country-select"
         element={
           !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <CountrySelect
               selectedCountry={user?.country}
-              onSelect={(country) => updateUser({ country })}
+              onSelect={(country: string) => updateUser({ country })}
               navigateTo={navigateTo}
             />
           )
@@ -234,11 +237,13 @@ function RouteWrapper({
         path="/gender-select"
         element={
           !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <GenderSelect
-              selectedGender={user?.preferredGender}
-              onSelect={(gender) => updateUser({ preferredGender: gender })}
+              selectedGender={user?.preferred_gender}
+              onSelect={(gender: string) =>
+                updateUser({ preferredGender: gender })
+              }
               navigateTo={navigateTo}
               user={user}
               updateUser={updateUser}
@@ -254,7 +259,7 @@ function RouteWrapper({
           !hasSeenOnboarding ? (
             <Navigate to="/onboarding" replace />
           ) : !isAuthenticated ? (
-            <Navigate to="/auth" replace />
+            <Navigate to="/login" replace />
           ) : (
             <Navigate to="/" replace />
           )
@@ -265,7 +270,7 @@ function RouteWrapper({
 }
 
 // Main router component
-export function AppRouter(props) {
+export function AppRouter(props: any) {
   return (
     <BrowserRouter>
       <RouteWrapper {...props} />
