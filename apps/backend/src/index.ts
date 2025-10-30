@@ -1,4 +1,5 @@
-import express from "express";
+import "dotenv/config";
+import express, { Request, Response } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
@@ -13,11 +14,7 @@ import matchingRoutes from "./routes/matching";
 
 // Configuration
 const PORT = 5002;
-const FRONTEND_URLS = [
-  "https://app.swipx.in",
-  "https://realswipxin-45ia.vercel.app",
-  "http://localhost:5173", // Local development
-];
+const FRONTEND_URLS = process.env.FRONTEND_URLS?.split(",");
 
 const app = express();
 const server = createServer(app);
@@ -424,7 +421,7 @@ io.on("connection", async (socket) => {
 });
 
 // Function to find matches (Direct matching without gender filtering)
-async function findMatch(userId) {
+async function findMatch(userId: string) {
   try {
     const waitingUser = waitingUsers.get(userId);
     if (!waitingUser) {
@@ -556,10 +553,10 @@ async function findMatch(userId) {
             [userId, matchedUserId]
           );
           console.log(`💰 Tokens deducted for match ${matchId}`);
-        } catch (error) {
+        } catch (error: unknown) {
           console.log(
             "⚠️ Could not deduct tokens (continuing anyway):",
-            error.message
+            (error as Error).message
           );
         }
 
@@ -717,7 +714,7 @@ async function processMatchingQueue() {
             } catch (error) {
               console.log(
                 "⚠️ Could not deduct tokens for queue match:",
-                error.message
+                (error as Error).message
               );
             }
 
@@ -773,7 +770,7 @@ setInterval(() => {
 }, 60000); // Run every minute
 
 // Error handling middleware
-app.use((err, req, res, next) => {
+app.use((err: Error, req: Request, res: Response) => {
   console.error("Unhandled error:", err);
   res.status(500).json({
     success: false,

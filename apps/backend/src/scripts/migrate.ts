@@ -327,7 +327,7 @@ const createTables = async () => {
     `);
 
     console.log('✅ Database migration completed successfully!');
-    
+
   } catch (error) {
     console.error('❌ Migration failed:', error);
     throw error;

@@ -1,8 +1,8 @@
+import { envs } from '@/constants/envs';
 import type { User } from '@/store/useAppStore';
 import axios from 'axios';
 
-// const API_BASE_URL = 'https://backendswipxin.onrender.com';
-const API_BASE_URL = 'http://localhost:5002';
+const API_BASE_URL = envs().BACKEND_URL;
 
 // Create axios instance with default config
 const api = axios.create({

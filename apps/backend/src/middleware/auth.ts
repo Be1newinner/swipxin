@@ -1,15 +1,12 @@
-import jwt from 'jsonwebtoken';
 import { query } from '../config/database.js';
-
-// JWT Configuration
-const JWT_SECRET = "your-super-secret-jwt-key-here-change-in-production";
-const JWT_EXPIRES_IN = "7d";
+import { NextFunction, Request, Response } from 'express';
+import { decodeToken } from '@/utils/jwt.js';
 
 // JWT Authentication middleware
-export const authenticateToken = async (req, res, next) => {
+export const authenticateToken = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers['authorization'];
-    const token = authHeader && authHeader.split(' ')[1]; // Bearer TOKEN
+    const token = authHeader && authHeader.split(' ')[1];
 
     if (!token) {
       return res.status(401).json({
@@ -19,8 +16,8 @@ export const authenticateToken = async (req, res, next) => {
     }
 
     // Verify the token
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
+    const decoded = decodeToken(token);
+
     // Get user from database
     const result = await query(
       'SELECT id, email, name, age, country, gender, preferred_gender, avatar_url, is_premium, tokens, is_online, last_seen, total_calls FROM users WHERE id = $1',
@@ -37,21 +34,21 @@ export const authenticateToken = async (req, res, next) => {
     // Add user to request object
     req.user = result.rows[0];
     next();
-  } catch (error) {
+  } catch (error: unknown) {
     console.error('Authentication error:', error);
-    
-    if (error.name === 'JsonWebTokenError') {
+
+    if ((error as Error).name === 'JsonWebTokenError') {
       return res.status(401).json({
         success: false,
         message: 'Invalid token'
       });
-    } else if (error.name === 'TokenExpiredError') {
+    } else if ((error as Error).name === 'TokenExpiredError') {
       return res.status(401).json({
         success: false,
         message: 'Token expired'
       });
     }
-    
+
     return res.status(500).json({
       success: false,
       message: 'Authentication failed'
@@ -60,13 +57,13 @@ export const authenticateToken = async (req, res, next) => {
 };
 
 // Optional authentication middleware (doesn't fail if no token)
-export const optionalAuth = async (req, res, next) => {
+export const optionalAuth = async (req: Request, res: Response, next: NextFunction) => {
   try {
     const authHeader = req.headers['authorization'];
     const token = authHeader && authHeader.split(' ')[1];
 
     if (token) {
-      const decoded = jwt.verify(token, JWT_SECRET);
+      const decoded = decodeToken(token);
       const result = await query(
         'SELECT id, email, name, age, country, gender, preferred_gender, avatar_url, is_premium, tokens, is_online, last_seen, total_calls FROM users WHERE id = $1',
         [decoded.userId]
@@ -78,32 +75,24 @@ export const optionalAuth = async (req, res, next) => {
     }
 
     next();
-  } catch (error) {
+  } catch {
     // For optional auth, we continue even if token is invalid
     next();
   }
 };
 
-// Generate JWT token
-export const generateToken = (userId) => {
-  return jwt.sign(
-    { userId },
-    JWT_SECRET,
-    { expiresIn: JWT_EXPIRES_IN }
-  );
-};
-
 // Socket.IO authentication middleware
-export const socketAuth = async (socket, next) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const socketAuth = async (socket: any, next: NextFunction) => {
   try {
     const token = socket.handshake.auth.token;
-    
+
     if (!token) {
       throw new Error('No token provided');
     }
 
-    const decoded = jwt.verify(token, JWT_SECRET);
-    
+    const decoded = decodeToken(token);
+
     const result = await query(
       'SELECT id, email, name, age, country, gender, preferred_gender, avatar_url, is_premium, tokens, is_online FROM users WHERE id = $1',
       [decoded.userId]

@@ -79,7 +79,7 @@ async function seedDatabase() {
     if (userCount > 0) {
       console.log(`📊 Database already has ${userCount} users.`);
       console.log('🤔 Do you want to continue adding dummy users? (This might create duplicates)');
-      
+
       // For automated seeding, we'll skip if users exist
       // You can comment out this return statement if you want to force seeding
       console.log('⏭️  Skipping seeding as users already exist.');
@@ -140,7 +140,7 @@ async function seedDatabase() {
         successCount++;
 
       } catch (userError) {
-        console.error(`❌ Failed to create user ${userData.email}:`, userError.message);
+        console.error(`❌ Failed to create user ${userData.email}:`, (userError as Error).message);
       }
     }
 

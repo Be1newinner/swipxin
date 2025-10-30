@@ -1,8 +1,9 @@
-import express from "express";
+import express, { Request, Response } from "express";
 import bcrypt from "bcryptjs";
 import { body, validationResult } from "express-validator";
 import { query } from "../config/database";
-import { generateToken, authenticateToken } from "../middleware/auth";
+import { authenticateToken } from "../middleware/auth";
+import { generateAccessToken } from "@/utils/jwt";
 
 const router = express.Router();
 
@@ -45,7 +46,7 @@ const loginValidation = [
 ];
 
 // Register endpoint
-router.post("/register", registerValidation, async (req, res) => {
+router.post("/register", registerValidation, async (req: Request, res: Response) => {
   try {
     console.log("Registration request received:", req.body);
 
@@ -60,7 +61,7 @@ router.post("/register", registerValidation, async (req, res) => {
       });
     }
 
-    const { email, password, name, age, country, gender, preferredGender } =
+    const { email, password, name, age, country, gender } =
       req.body;
 
     // Set default country if not provided
@@ -104,7 +105,7 @@ router.post("/register", registerValidation, async (req, res) => {
     );
 
     // Generate token
-    const token = generateToken(user.id);
+    const token = generateAccessToken(user.id);
 
     // Remove sensitive data from response
     delete user.password_hash;
@@ -127,7 +128,7 @@ router.post("/register", registerValidation, async (req, res) => {
 });
 
 // Login endpoint
-router.post("/login", loginValidation, async (req, res) => {
+router.post("/login", loginValidation, async (req: Request, res: Response) => {
   try {
     // Check validation errors
     const errors = validationResult(req);
@@ -196,7 +197,7 @@ router.post("/login", loginValidation, async (req, res) => {
     );
 
     // Generate token
-    const token = generateToken(user.id);
+    const token = generateAccessToken(user.id);
 
     // Remove sensitive data from response
     delete user.password_hash;
@@ -221,7 +222,7 @@ router.post("/login", loginValidation, async (req, res) => {
 });
 
 // Get current user profile
-router.get("/me", authenticateToken, async (req, res) => {
+router.get("/me", authenticateToken, async (req: Request, res: Response) => {
   try {
     // Get fresh user data from database
     const result = await query(
@@ -268,7 +269,7 @@ router.put(
       .isInt({ min: 0 })
       .withMessage("Tokens must be a non-negative integer"),
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -371,7 +372,7 @@ router.post(
       .isIn(["male", "female", "other"])
       .withMessage("Invalid preferred gender"),
   ],
-  async (req, res) => {
+  async (req: Request, res: Response) => {
     try {
       const errors = validationResult(req);
       if (!errors.isEmpty()) {
@@ -458,9 +459,9 @@ router.post(
 );
 
 // Deduct tokens for video call
-router.post("/deduct-tokens", authenticateToken, async (req, res) => {
+router.post("/deduct-tokens", authenticateToken, async (req: Request, res: Response) => {
   try {
-    const tokenCost = 8; // Cost per video call connection
+    const tokenCost = 8;
 
     // Get current user tokens
     const userResult = await query(
@@ -558,7 +559,7 @@ router.post("/deduct-tokens", authenticateToken, async (req, res) => {
 });
 
 // Get user statistics
-router.get("/stats", authenticateToken, async (req, res) => {
+router.get("/stats", authenticateToken, async (req: Request, res: Response) => {
   try {
     // Get user stats
     const userStats = await query(

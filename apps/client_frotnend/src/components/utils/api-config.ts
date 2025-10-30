@@ -1,56 +1,41 @@
+import { ENVIRONMENTS } from "@/constants/envs";
+import api from "@/lib/api";
 import axios from "axios";
 
-// Detect environment
-const isFigmaPreview =
-  typeof window !== "undefined" && window.location.hostname.includes("figma");
 const isLocalhost =
   typeof window !== "undefined" &&
   (window.location.hostname === "localhost" ||
     window.location.hostname === "127.0.0.1");
-const isDevelopment =
-  process.env.NODE_ENV === "development" || isFigmaPreview || isLocalhost;
+const isDevelopment = ENVIRONMENTS.NODE_ENV === "development";
 
 // API Configuration - Replace with your actual API key
 export const API_CONFIG = {
-  // WebRTC Signaling Server
-  SIGNALING_SERVER_URL: "wss://your-signaling-server.io",
-  SOCKET_IO_URL: "https://your-socket-server.io",
+  // WebRTC Signaling Server: 
+  SIGNALING_SERVER_URL: ENVIRONMENTS.SIGNALING_SERVER_URL,
 
-  // Google OAuth - Use demo client ID for Figma preview or disable entirely
-  GOOGLE_CLIENT_ID: isDevelopment
-    ? null // Disable Google auth in development/preview
-    : "YOUR_GOOGLE_CLIENT_ID_HERE",
-
-  // Facebook App - Use demo app ID for Figma preview or disable entirely
-  FACEBOOK_APP_ID: isDevelopment
-    ? null // Disable Facebook auth in development/preview
-    : "YOUR_FACEBOOK_APP_ID_HERE",
+  // Socket.IO Server URL:
+  SOCKET_IO_URL: ENVIRONMENTS.BACKEND_URL,
 
   // Environment flags
   IS_DEVELOPMENT: isDevelopment,
-  IS_FIGMA_PREVIEW: isFigmaPreview,
   IS_LOCALHOST: isLocalhost,
 
-  // API Base URLs
-  BASE_URL: "https://backendswipxin.onrender.com",
+  // Backend API Base URL for other API calls
+  BASE_URL: ENVIRONMENTS.BACKEND_URL,
 };
+
 
 // Check if APIs are properly configured
 export const isApiConfigured = {
-  google:
-    API_CONFIG.GOOGLE_CLIENT_ID &&
-    API_CONFIG.GOOGLE_CLIENT_ID !== "YOUR_GOOGLE_CLIENT_ID_HERE",
-  facebook:
-    API_CONFIG.FACEBOOK_APP_ID &&
-    API_CONFIG.FACEBOOK_APP_ID !== "YOUR_FACEBOOK_APP_ID_HERE",
   webrtc:
     API_CONFIG.SIGNALING_SERVER_URL &&
     API_CONFIG.SIGNALING_SERVER_URL !== "wss://your-signaling-server.io",
   socketio:
     API_CONFIG.SOCKET_IO_URL &&
     API_CONFIG.SOCKET_IO_URL !== "https://your-socket-server.io",
-  supabase: true, // Add supabase property for compatibility
+  supabase: true,
 };
+
 // WebRTC Room Management Function using Axios
 export const createWebRTCRoom = async () => {
   // Check if WebRTC signaling server is configured
@@ -83,7 +68,7 @@ export const createWebRTCRoom = async () => {
   } catch (error) {
     console.warn(
       "Signaling server call failed, falling back to mock room:",
-      error.message || "Unknown error"
+      (error as Error).message || "Unknown error"
     );
     // Fallback to mock data for development
     const mockRoomId = "room-" + Math.random().toString(36).substring(2, 11);
@@ -93,7 +78,7 @@ export const createWebRTCRoom = async () => {
     };
   }
 };
-export const deleteWebRTCRoom = async (roomId) => {
+export const deleteWebRTCRoom = async (roomId: string) => {
   // Skip deletion if using mock rooms or API not configured
   if (
     !isApiConfigured.webrtc ||
@@ -121,7 +106,7 @@ export const deleteWebRTCRoom = async (roomId) => {
   } catch (error) {
     console.warn(
       "Error deleting WebRTC room (non-critical):",
-      error.message || "Unknown error"
+      (error as Error).message || "Unknown error"
     );
   }
 };
@@ -159,11 +144,11 @@ export const getWebRTCStats = async () => {
   } catch (error) {
     console.error(
       "Failed to fetch WebRTC stats:",
-      error.message || "Unknown error"
+      (error as Error).message || "Unknown error"
     );
     return {
       success: false,
-      error: error.message || "Unknown error",
+      error: (error as Error).message || "Unknown error",
       timestamp: new Date().toISOString(),
     };
   }
@@ -220,7 +205,13 @@ export const MOCK_USERS = [
   },
 ];
 
-export const findRandomUser = (filters) => {
+interface IFilter {
+  excludeId: string;
+  country: string;
+  gender: string;
+}
+
+export const findRandomUser = (filters: IFilter) => {
   let availableUsers = MOCK_USERS.filter(
     (user) => user.id !== filters.excludeId
   );

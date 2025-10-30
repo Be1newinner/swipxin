@@ -11,14 +11,9 @@ const pool = new Pool({
   ssl: {
     rejectUnauthorized: false
   },
-  max: 10, // Maximum number of connections
+  max: 10,
   idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 10000, // Increased timeout
-  acquireTimeoutMillis: 10000,
-  createTimeoutMillis: 10000,
-  destroyTimeoutMillis: 5000,
-  reapIntervalMillis: 1000,
-  createRetryIntervalMillis: 200,
+  connectionTimeoutMillis: 10000,
 });
 
 // Test the connection
@@ -32,7 +27,8 @@ pool.on('error', (err) => {
 });
 
 // Helper function to execute queries
-export const query = async (text, params) => {
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+export const query = async (text: string, params?: any) => {
   const start = Date.now();
   try {
     const res = await pool.query(text, params);
