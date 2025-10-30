@@ -1,4 +1,4 @@
-import * as jwt from "jsonwebtoken";
+import jwt from "jsonwebtoken";
 
 export function decodeToken(token: string) {
     const JWT_SECRET = process.env.JWT_SECRET;

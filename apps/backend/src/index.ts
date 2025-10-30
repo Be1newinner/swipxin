@@ -1,5 +1,5 @@
 import "dotenv/config";
-import express, { Request, Response } from "express";
+import express, { NextFunction, Request, Response } from "express";
 import { createServer } from "http";
 import { Server } from "socket.io";
 import cors from "cors";
@@ -770,7 +770,7 @@ setInterval(() => {
 }, 60000); // Run every minute
 
 // Error handling middleware
-app.use((err: Error, req: Request, res: Response) => {
+app.use((err: Error, _req: Request, res: Response, _next: NextFunction) => {
   console.error("Unhandled error:", err);
   res.status(500).json({
     success: false,
@@ -779,10 +779,10 @@ app.use((err: Error, req: Request, res: Response) => {
 });
 
 // 404 handler
-app.use(/(.*)/, (req, res) => {
+app.use((req, res) => {
   res.status(404).json({
     success: false,
-    message: "Route not found",
+    message: `Route or Request method not found: ${req.originalUrl}`,
   });
 });
 
