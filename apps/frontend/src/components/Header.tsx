@@ -13,10 +13,10 @@ export function AppHeader({ user, navigate }: Props) {
     <header
       className={cn(
         "w-full sm:max-w-xl",
-        "bg-white supports-[backdrop-filter]:backdrop-blur-md",
+        "bg-white supports-backdrop-filter:backdrop-blur-md",
         "relative border-b border-transparent",
         "before:content-[''] before:absolute before:inset-x-0 before:bottom-0 before:h-px",
-        "before:bg-gradient-to-r before:from-sky-500/0 before:via-sky-500/60 before:to-sky-500/0"
+        "before:bg-linear-to-r before:from-sky-500/0 before:via-sky-500/60 before:to-sky-500/0"
       )}
       style={{
         position: "fixed",
@@ -30,7 +30,7 @@ export function AppHeader({ user, navigate }: Props) {
               className={cn(
                 "relative size-10 rounded-xl grid place-items-center",
                 // bright, light-first gradient tile
-                "bg-gradient-to-br from-indigo-500 to-sky-500",
+                "bg-linear-to-br from-indigo-500 to-sky-500",
                 // soft luminous shadow tuned for light theme
                 "shadow-[0_8px_24px_-10px_rgba(2,132,199,0.25)]",
                 // crisp edge for light mode surfaces
@@ -63,7 +63,7 @@ export function AppHeader({ user, navigate }: Props) {
                 className={cn(
                   "h-8 px-3 gap-1.5 rounded-full",
                   // light, airy pill with gradient tint
-                  "bg-gradient-to-r from-indigo-500/10 to-sky-500/10",
+                  "bg-linear-to-r from-indigo-500/10 to-sky-500/10",
                   // crisp border for light theme
                   "border border-sky-500/30 hover:border-sky-500/50",
                   // text legibility on light background

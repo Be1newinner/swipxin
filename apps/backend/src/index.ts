@@ -10,6 +10,7 @@ import authRoutes from "./routes/auth";
 import matchingRoutes from "./routes/matching";
 
 import { initializeSocket } from "./socket"; // <-- import your new socket module
+import livekitRoutes from "./routes/livekit";
 
 const PORT = 5002;
 const FRONTEND_URLS = process.env.FRONTEND_URLS?.split(",");
@@ -51,6 +52,8 @@ app.get("/health", (_, res) =>
     uptime: process.uptime(),
   })
 );
+
+app.use("/api/livekit", livekitRoutes);
 
 app.use("/api/auth", authRoutes);
 app.use("/api/matching", matchingRoutes);

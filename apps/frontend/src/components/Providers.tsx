@@ -2,7 +2,7 @@
 "use client";
 
 import type { ReactNode } from "react";
-import { ErrorToast } from "./ErrorToast";
+import { ErrorToast } from "./Toast/ErrorToast";
 import { PWAInstallBanner } from "./PWAInstallBanner";
 import { Toaster } from "sonner";
 import { useAppStore } from "@/store/useAppStore";

@@ -1,22 +1,40 @@
-import React from 'react';
-import { AlertCircle, RefreshCw } from 'lucide-react';
-import { Button } from './ui/button';
-import { Alert, AlertDescription, AlertTitle } from './ui/alert';
+import { Component } from 'react';
+import type { ComponentType, ReactNode, ErrorInfo } from 'react';
+import DefaultErrorFallback from './DefaultErrorFallback';
 
-export class ErrorBoundary extends React.Component {
-  constructor(props) {
+// Types for error boundary state
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
+  errorInfo?: ErrorInfo;
+}
+
+// Props for fallback components
+export interface FallbackProps {
+  error?: Error;
+  retry: () => void;
+}
+
+// Props for ErrorBoundary component
+interface ErrorBoundaryProps {
+  children: ReactNode;
+  fallback?: ComponentType<FallbackProps>;
+}
+
+export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundaryState> {
+  constructor(props: ErrorBoundaryProps) {
     super(props);
     this.state = { hasError: false };
   }
 
-  static getDerivedStateFromError(error) {
+  static getDerivedStateFromError(error: Error): Partial<ErrorBoundaryState> {
     return {
       hasError: true,
       error,
     };
   }
 
-  componentDidCatch(error, errorInfo) {
+  componentDidCatch(error: Error, errorInfo: ErrorInfo): void {
     console.error('Error caught by boundary:', error, errorInfo);
     this.setState({
       error,
@@ -24,11 +42,11 @@ export class ErrorBoundary extends React.Component {
     });
   }
 
-  retry = () => {
+  retry = (): void => {
     this.setState({ hasError: false, error: undefined, errorInfo: undefined });
   };
 
-  render() {
+  render(): ReactNode {
     if (this.state.hasError) {
       if (this.props.fallback) {
         const FallbackComponent = this.props.fallback;
@@ -42,55 +60,12 @@ export class ErrorBoundary extends React.Component {
   }
 }
 
-function DefaultErrorFallback({ error, retry }) {
-  return (
-    <div className="min-h-screen w-full bg-background flex items-center justify-center p-4">
-      <div className="max-w-md w-full">
-        <Alert variant="destructive" className="glass">
-          <AlertCircle className="h-4 w-4" />
-          <AlertTitle>Something went wrong</AlertTitle>
-          <AlertDescription className="mt-2">
-            {error.message || 'An unexpected error occurred'}
-          </AlertDescription>
-        </Alert>
-        
-        <div className="mt-4 space-y-3">
-          <Button 
-            onClick={retry} 
-            className="w-full"
-            variant="outline"
-          >
-            <RefreshCw className="w-4 h-4 mr-2" />
-            Try Again
-          </Button>
-          
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="w-full"
-            variant="secondary"
-          >
-            Reload Page
-          </Button>
-        </div>
-        
-        <div className="mt-4 p-3 bg-muted rounded-lg">
-          <p className="text-sm text-muted-foreground">
-            If this problem persists, please try:
-          </p>
-          <ul className="text-sm text-muted-foreground mt-2 space-y-1">
-            <li>• Clearing your browser cache</li>
-            <li>• Checking your internet connection</li>
-            <li>• Refreshing the page</li>
-          </ul>
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// Higher-order component for easier usage
-export function withErrorBoundary(Component, fallback) {
-  return function WrappedComponent(props) {
+// Higher-order component for easier usage with proper typing
+export function withErrorBoundary<P extends object>(
+  Component: ComponentType<P>,
+  fallback?: ComponentType<FallbackProps>
+): ComponentType<P> {
+  return function WrappedComponent(props: P) {
     return (
       <ErrorBoundary fallback={fallback}>
         <Component {...props} />
