@@ -38,13 +38,11 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
     const activeMatches = new Map<string, any>();
     const rooms = new Map<string, Room>();
 
-    // Common helper to validate socket exists and safe access
     const socketExists = (userId: string) => {
         const userSocket = activeUsers.get(userId);
         return userSocket && io.sockets.sockets.has(userSocket.socketId);
     };
 
-    // Helper to emit to user by userId
     const emitToUser = (userId: string, event: string, payload: any) => {
         const userSocket = activeUsers.get(userId);
         if (userSocket) {
@@ -77,7 +75,6 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
         const matchId = uuid();
         const roomId = uuid();
 
-        // Remove both users from queue safely
         waitingUsers.delete(userId);
         waitingUsers.delete(matchedUserId);
 
@@ -89,13 +86,11 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
         });
 
         if (!socketExists(userId) || !socketExists(matchedUserId)) {
-            // Re-add users if sockets invalid
             if (waitingUsers.get(userId) === undefined) waitingUsers.set(userId, waitingUser);
             if (waitingUsers.get(matchedUserId) === undefined) waitingUsers.set(matchedUserId, matchedUserData);
             return false;
         }
 
-        // Notify both users
         emitToUser(userId, "matchFound", {
             matchId,
             roomId,
@@ -175,7 +170,6 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
                     console.warn("Could not deduct tokens", error);
                 }
 
-                // Stop inner loop, user1 matched
                 break;
             }
         }
@@ -223,7 +217,6 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
 
         socket.broadcast.emit("userOnline", { userId, user });
 
-        // Event handlers (grouped for brevity)
         socket.on("joinMatchingQueue", async (preferences = {}) => {
             if (user.tokens < 1) {
                 socket.emit("matchingError", { message: "Insufficient tokens. You need at least 1 token to start a video call." });
@@ -241,32 +234,91 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
             socket.emit("matchingStatus", { status: "idle", message: "Stopped searching for matches" });
         });
 
-        socket.on("webrtc-signal", ({ roomId, signal }) => {
-            const room = rooms.get(roomId);
-            if (!room) return;
-            const targetSocketId = room.participants.find(id => id !== socket.id);
-            if (targetSocketId) {
-                io.to(targetSocketId).emit("webrtc-signal", { signal, fromUserId: userId, roomId });
-            }
-        });
+        // ==================== WEBRTC SIGNALING HANDLERS ====================
 
+        // ✅ FIXED: Only emit roomReady when BOTH participants have joined
         socket.on("joinVideoRoom", ({ roomId, matchId }) => {
+            console.log(`🚪 User ${userId} joining room ${roomId}`);
+
             socket.join(roomId);
+
             const room = rooms.get(roomId);
             if (room) {
                 room.participants.push(socket.id);
+                console.log(`✅ Room ${roomId} now has ${room.participants.length} participants`);
             } else {
                 rooms.set(roomId, { participants: [socket.id], matchId, createdAt: Date.now() });
+                console.log(`🆕 Created new room ${roomId} with 1 participant`);
             }
-            io.to(roomId).emit("roomReady", { roomId, matchId, participants: rooms.get(roomId)?.participants.length });
+
+            const currentRoom = rooms.get(roomId);
+            const participantCount = currentRoom?.participants.length || 0;
+
+            // ✅ CRITICAL FIX: Only emit roomReady when BOTH users are present
+            if (participantCount === 2) {
+                console.log(`🎉 Room ${roomId} is ready with 2 participants!`);
+
+                // Get match info to determine who is initiator
+                activeMatches.get(matchId);
+
+                // Emit to both participants with their initiator status
+                currentRoom?.participants.forEach((participantSocketId, index) => {
+                    const isInitiator = index === 0; // First joiner is initiator
+
+                    io.to(participantSocketId).emit("roomReady", {
+                        roomId,
+                        matchId,
+                        participants: 2,
+                        isInitiator
+                    });
+
+                    console.log(`📤 Sent roomReady to participant ${index + 1}, isInitiator: ${isInitiator}`);
+                });
+            } else {
+                console.log(`⏳ Room ${roomId} waiting for second participant (current: ${participantCount})`);
+            }
         });
 
+        // WebRTC offer relay
+        socket.on("webrtc-offer", ({ roomId, offer }) => {
+            console.log(`📤 Relaying WebRTC offer in room ${roomId}`);
+            socket.to(roomId).emit("webrtc-offer", {
+                offer,
+                fromUserId: userId,
+                fromName: user.name
+            });
+        });
+
+        // WebRTC answer relay
+        socket.on("webrtc-answer", ({ roomId, answer }) => {
+            console.log(`📤 Relaying WebRTC answer in room ${roomId}`);
+            socket.to(roomId).emit("webrtc-answer", {
+                answer,
+                fromUserId: userId
+            });
+        });
+
+        // ICE candidate relay
+        socket.on("ice-candidate", ({ roomId, candidate }) => {
+            console.log(`🧊 Relaying ICE candidate in room ${roomId}`);
+            socket.to(roomId).emit("ice-candidate", {
+                candidate,
+                fromUserId: userId
+            });
+        });
+
+        // Leave video room
         socket.on("leaveVideoRoom", async ({ roomId, matchId }) => {
+            console.log(`👋 User ${userId} leaving room ${roomId}`);
+
             socket.leave(roomId);
             const room = rooms.get(roomId);
             if (!room) return;
+
             room.participants = room.participants.filter(id => id !== socket.id);
+
             if (room.participants.length === 0) {
+                console.log(`🗑️ Room ${roomId} is empty, deleting`);
                 rooms.delete(roomId);
                 if (matchId) {
                     try {
@@ -276,9 +328,41 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
                     }
                 }
             } else {
+                console.log(`📢 Notifying remaining participant in room ${roomId}`);
                 socket.to(roomId).emit("participantLeft", { userId, roomId });
             }
         });
+
+        // Skip match
+        socket.on("skipMatch", async ({ roomId, matchId, reason }) => {
+            console.log(`⏭️ User ${userId} skipping match in room ${roomId}`);
+
+            socket.to(roomId).emit("partnerSkipped", {
+                userId,
+                reason,
+                roomId
+            });
+
+            socket.leave(roomId);
+
+            const room = rooms.get(roomId);
+            if (room) {
+                room.participants = room.participants.filter(id => id !== socket.id);
+                if (room.participants.length === 0) {
+                    rooms.delete(roomId);
+                }
+            }
+
+            if (matchId) {
+                try {
+                    await query("SELECT end_match($1, $2)", [matchId, userId]);
+                } catch (e) {
+                    console.error("Error ending match", e);
+                }
+            }
+        });
+
+        // ==================== CHAT HANDLERS ====================
 
         socket.on("sendMessage", async ({ matchId, content, messageType = "text" }) => {
             try {
@@ -287,10 +371,20 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
                     [matchId, userId, content, messageType]
                 );
                 const message = result.rows[0];
+
                 const matchResult = await query("SELECT room_id FROM matches WHERE id = $1", [matchId]);
                 if (matchResult.rows.length === 0) return;
+
                 const roomId = matchResult.rows[0].room_id;
-                io.to(roomId).emit("newMessage", { ...message, senderName: user.name });
+
+                io.to(roomId).emit("newMessage", {
+                    id: message.id,
+                    senderId: userId,
+                    content: message.content,
+                    messageType: message.message_type,
+                    createdAt: message.created_at,
+                    senderName: user.name
+                });
             } catch (e) {
                 console.error("Error sending message", e);
                 socket.emit("messageError", { message: "Failed to send message" });
@@ -303,19 +397,23 @@ export function initializeSocket(server: any, FRONTEND_URLS: string[] | undefine
         });
 
         socket.on("disconnect", async () => {
+            console.log(`❌ User disconnected: ${user.name} (${userId})`);
+
             activeUsers.delete(userId);
             waitingUsers.delete(userId);
             await updateOnlineStatus(false);
-            // Clean up user from rooms
+
+            // Clean up user from all rooms
             for (const [roomId, room] of rooms.entries()) {
                 if (room.participants.includes(socket.id)) {
                     room.participants = room.participants.filter(id => id !== socket.id);
                     socket.to(roomId).emit("participantLeft", { userId, roomId });
-                    if (room.participants.length === 0) rooms.delete(roomId);
+                    if (room.participants.length === 0) {
+                        rooms.delete(roomId);
+                    }
                 }
             }
         });
-
     });
 
     // Periodic tasks
