@@ -1,22 +1,42 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from './ui/button';
 import { Card } from './ui/card';
 import { Download, X, Smartphone } from 'lucide-react';
 
+// Extend Window interface to include navigator.standalone (iOS)
+declare global {
+  interface Window {
+    deferredPrompt?: BeforeInstallPromptEvent;
+  }
+
+  interface Navigator {
+    standalone?: boolean;
+  }
+}
+
+// BeforeInstallPromptEvent interface
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{
+    outcome: 'accepted' | 'dismissed';
+    platform: string;
+  }>;
+}
+
 export function PWAInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState(null);
-  const [showBanner, setShowBanner] = useState(false);
-  const [isInstalled, setIsInstalled] = useState(false);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
+  const [showBanner, setShowBanner] = useState<boolean>(false);
+  const [isInstalled, setIsInstalled] = useState<boolean>(false);
 
   useEffect(() => {
     // Check if already installed
-    const checkIfInstalled = () => {
+    const checkIfInstalled = (): boolean => {
       // Check if running as PWA
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
       const isFullscreen = window.matchMedia('(display-mode: fullscreen)').matches;
       const isMinimalUI = window.matchMedia('(display-mode: minimal-ui)').matches;
-      
-      return isStandalone || isFullscreen || isMinimalUI || window.navigator.standalone;
+
+      return isStandalone || isFullscreen || isMinimalUI || !!window.navigator.standalone;
     };
 
     if (checkIfInstalled()) {
@@ -25,13 +45,14 @@ export function PWAInstallBanner() {
     }
 
     // Listen for the beforeinstallprompt event
-    const handleBeforeInstallPrompt = (e) => {
+    const handleBeforeInstallPrompt = (e: Event): void => {
       // Prevent Chrome 67 and earlier from automatically showing the prompt
       e.preventDefault();
-      
+
       // Stash the event so it can be triggered later
-      setDeferredPrompt(e);
-      
+      const promptEvent = e as BeforeInstallPromptEvent;
+      setDeferredPrompt(promptEvent);
+
       // Check if user has dismissed the banner before
       const dismissed = localStorage.getItem('pwa-banner-dismissed');
       if (!dismissed) {
@@ -40,7 +61,7 @@ export function PWAInstallBanner() {
     };
 
     // Listen for app installed event
-    const handleAppInstalled = () => {
+    const handleAppInstalled = (): void => {
       setIsInstalled(true);
       setShowBanner(false);
       setDeferredPrompt(null);
@@ -55,22 +76,22 @@ export function PWAInstallBanner() {
     };
   }, []);
 
-  const handleInstall = async () => {
+  const handleInstall = async (): Promise<void> => {
     if (!deferredPrompt) return;
 
     try {
       // Show the install prompt
-      deferredPrompt.prompt();
-      
+      await deferredPrompt.prompt();
+
       // Wait for the user to respond to the prompt
       const { outcome } = await deferredPrompt.userChoice;
-      
+
       if (outcome === 'accepted') {
         console.log('User accepted the install prompt');
       } else {
         console.log('User dismissed the install prompt');
       }
-      
+
       // Clear the deferredPrompt
       setDeferredPrompt(null);
       setShowBanner(false);
@@ -79,7 +100,7 @@ export function PWAInstallBanner() {
     }
   };
 
-  const handleDismiss = () => {
+  const handleDismiss = (): void => {
     setShowBanner(false);
     // Remember that user dismissed the banner
     localStorage.setItem('pwa-banner-dismissed', 'true');
@@ -96,14 +117,14 @@ export function PWAInstallBanner() {
         <div className="p-2 rounded-full bg-primary/10">
           <Smartphone className="w-5 h-5 text-primary" />
         </div>
-        
+
         <div className="flex-1 min-w-0">
           <p className="font-medium text-sm">Install Swipx</p>
           <p className="text-xs text-muted-foreground">
             Get the full app experience with offline support
           </p>
         </div>
-        
+
         <div className="flex gap-2">
           <Button
             size="sm"
@@ -113,7 +134,7 @@ export function PWAInstallBanner() {
             <Download className="w-3 h-3 mr-1" />
             Install
           </Button>
-          
+
           <Button
             variant="ghost"
             size="sm"

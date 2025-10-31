@@ -6,7 +6,7 @@ export default function LoadingScreen({ message = "Loading..." }) {
       {/* Logo */}
       <div className="flex items-center space-x-2 mb-8">
         <Heart className="h-10 w-10 text-primary animate-pulse" />
-        <h1 className="text-3xl font-bold bg-gradient-to-r from-primary to-primary/80 bg-clip-text text-transparent">
+        <h1 className="text-3xl font-bold bg-linear-to-r from-primary to-primary/80 bg-clip-text text-transparent">
           SwipX
         </h1>
       </div>

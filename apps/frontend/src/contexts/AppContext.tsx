@@ -1,7 +1,10 @@
-import { createContext, useContext, useReducer, useEffect } from "react";
+import { useReducer, useEffect } from "react";
+import type { ReactNode } from "react";
+import { AppDispatchContext, AppStateContext } from "./useAppState";
+import { ActionTypes, type AppAction, type AppState, type User } from "./types";
 
 // Initial state
-const initialState = {
+const initialState: AppState = {
   user: null,
   isAuthenticated: false,
   selectedCountry: "US",
@@ -13,24 +16,8 @@ const initialState = {
   error: null,
 };
 
-// Action types
-const ActionTypes = {
-  SET_USER: "SET_USER",
-  SET_AUTHENTICATED: "SET_AUTHENTICATED",
-  SET_SELECTED_COUNTRY: "SET_SELECTED_COUNTRY",
-  TOGGLE_DARK_MODE: "TOGGLE_DARK_MODE",
-  SET_IN_CALL: "SET_IN_CALL",
-  SET_CALL_DURATION: "SET_CALL_DURATION",
-  SET_CURRENT_SCREEN: "SET_CURRENT_SCREEN",
-  SET_LOADING: "SET_LOADING",
-  SET_ERROR: "SET_ERROR",
-  CLEAR_ERROR: "CLEAR_ERROR",
-  UPDATE_USER: "UPDATE_USER",
-  LOGOUT: "LOGOUT",
-};
-
 // Reducer function
-function appReducer(state, action) {
+function appReducer(state: AppState, action: AppAction): AppState {
   switch (action.type) {
     case ActionTypes.SET_USER:
       return {
@@ -99,13 +86,13 @@ function appReducer(state, action) {
         ...state,
         user: state.user
           ? { ...state.user, ...action.payload }
-          : action.payload,
+          : (action.payload as User),
       };
 
     case ActionTypes.LOGOUT:
       return {
         ...initialState,
-        isDarkMode: state.isDarkMode, // Preserve dark mode preference
+        isDarkMode: state.isDarkMode,
       };
 
     default:
@@ -113,32 +100,31 @@ function appReducer(state, action) {
   }
 }
 
-// Create contexts
-const AppStateContext = createContext();
-const AppDispatchContext = createContext();
+
+// Provider props interface
+interface AppProviderProps {
+  children: ReactNode;
+}
 
 // Provider component
-export function AppProvider({ children }) {
+export function AppProvider({ children }: AppProviderProps) {
   const [state, dispatch] = useReducer(appReducer, initialState);
 
   // Load persisted data on mount
   useEffect(() => {
-    const loadPersistedData = () => {
+    const loadPersistedData = (): void => {
       try {
-        // Load user data from localStorage
         const savedUser = localStorage.getItem("swipx-user");
         if (savedUser) {
-          const user = JSON.parse(savedUser);
+          const user = JSON.parse(savedUser) as User;
           dispatch({ type: ActionTypes.SET_USER, payload: user });
         }
 
-        // Load dark mode preference
         const savedDarkMode = localStorage.getItem("swipx-dark-mode");
         if (savedDarkMode === "true") {
           dispatch({ type: ActionTypes.TOGGLE_DARK_MODE });
         }
 
-        // Load selected country
         const savedCountry = localStorage.getItem("swipx-country");
         if (savedCountry) {
           dispatch({
@@ -165,7 +151,6 @@ export function AppProvider({ children }) {
 
   useEffect(() => {
     localStorage.setItem("swipx-dark-mode", state.isDarkMode.toString());
-    // Apply dark mode class to document
     if (state.isDarkMode) {
       document.documentElement.classList.add("dark");
     } else {
@@ -185,23 +170,3 @@ export function AppProvider({ children }) {
     </AppStateContext.Provider>
   );
 }
-
-// Custom hooks
-export function useAppState() {
-  const context = useContext(AppStateContext);
-  if (context === undefined) {
-    throw new Error("useAppState must be used within an AppProvider");
-  }
-  return context;
-}
-
-export function useAppDispatch() {
-  const context = useContext(AppDispatchContext);
-  if (context === undefined) {
-    throw new Error("useAppDispatch must be used within an AppProvider");
-  }
-  return context;
-}
-
-// Export action types for use in components
-export { ActionTypes };
