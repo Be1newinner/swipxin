@@ -87,7 +87,7 @@ export function Plans() {
     return null;
   }
 
-  const handlePurchase = async (plan) => {
+  const handlePurchase = async (plan: { price: number, id: string }) => {
     if (plan.id === "free") {
       toast.info("You are already enjoying free video chats!");
       return;
@@ -101,7 +101,7 @@ export function Plans() {
       // Update user to premium for test period
       updateUser({
         is_premium: true,
-        premiumExpiry: new Date(Date.now() + 60000), // 1 minute from now
+        // premiumExpiry: new Date(Date.now() + 60000), // 1 minute from now
       });
 
       toast.success(
@@ -112,7 +112,7 @@ export function Plans() {
       setTimeout(() => {
         updateUser({
           is_premium: false,
-          premiumExpiry: null,
+          // premiumExpiry: null,
         });
         toast.info("Test drive expired. Video chats continue as free user!");
       }, 60000);
@@ -130,7 +130,7 @@ export function Plans() {
     updateUser({
       is_premium: true,
       tokens: (user.tokens || 0) + 150, // Add 150 tokens
-      premiumExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
+      // premiumExpiry: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days from now
     });
 
     toast.success(`Premium activated! Enhanced filtering + 150 tokens added.`);
@@ -167,17 +167,15 @@ export function Plans() {
         <div className="p-4 space-y-6">
           {/* Current Status */}
           <Card
-            className={`glass px-4 ${
-              user.is_premium ? "bg-red-400" : "bg-white"
-            } border-none`}
+            className={`glass px-4 ${user.is_premium ? "bg-red-400" : "bg-white"
+              } border-none`}
           >
             <div className="flex items-center gap-3">
               <div
-                className={`w-10 h-10 rounded-xl flex items-center justify-center ${
-                  user.is_premium
-                    ? "bg-gradient-to-br from-primary to-accent"
-                    : "bg-gradient-to-br from-red-500 to-blue-500"
-                }`}
+                className={`w-10 h-10 rounded-xl flex items-center justify-center ${user.is_premium
+                  ? "bg-gradient-to-br from-primary to-accent"
+                  : "bg-gradient-to-br from-red-500 to-blue-500"
+                  }`}
               >
                 {user.is_premium ? (
                   <Crown className="w-5 h-5 text-white" />
@@ -203,16 +201,14 @@ export function Plans() {
             {plans.map((plan) => (
               <Card
                 key={plan.id}
-                className={`glass relative overflow-hidden ${
-                  plan.isPopular
-                    ? "border-primary bg-gradient-to-br from-primary/5 to-accent/5"
-                    : ""
-                } ${
-                  (plan.id === "free" && !user.is_premium) ||
-                  (plan.id === "premium" && user.is_premium)
+                className={`glass relative overflow-hidden ${plan.isPopular
+                  ? "border-primary bg-gradient-to-br from-primary/5 to-accent/5"
+                  : ""
+                  } ${(plan.id === "free" && !user.is_premium) ||
+                    (plan.id === "premium" && user.is_premium)
                     ? "ring-2 ring-primary/50"
                     : ""
-                } bg-white border-none`}
+                  } bg-white border-none`}
               >
                 {plan.isPopular && (
                   <div className="absolute top-0 right-0 bg-gradient-to-r from-primary to-accent text-white text-xs px-3 py-1 rounded-bl-lg">
@@ -223,23 +219,22 @@ export function Plans() {
 
                 {((plan.id === "free" && !user.is_premium) ||
                   (plan.id === "premium" && user.is_premium)) && (
-                  <div className="absolute top-0 left-0 bg-red-500 text-xs px-4 py-2 rounded-br-lg font-semibold">
-                    Current Plan
-                  </div>
-                )}
+                    <div className="absolute top-0 left-0 bg-red-500 text-xs px-4 py-2 rounded-br-lg font-semibold">
+                      Current Plan
+                    </div>
+                  )}
 
                 <div className="p-6 space-y-4">
                   {/* Header */}
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3">
                       <div
-                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${
-                          plan.id === "free"
-                            ? "bg-gradient-to-br from-red-500 to-blue-500"
-                            : plan.price === 0
+                        className={`w-12 h-12 rounded-xl flex items-center justify-center ${plan.id === "free"
+                          ? "bg-gradient-to-br from-red-500 to-blue-500"
+                          : plan.price === 0
                             ? "bg-accent/10"
                             : "bg-gradient-to-br from-primary to-accent"
-                        }`}
+                          }`}
                       >
                         {plan.id === "free" ? (
                           <Heart className="w-6 h-6 text-white" />
@@ -288,13 +283,12 @@ export function Plans() {
                       (plan.id === "free" && !user.is_premium) ||
                       (plan.id === "premium" && user.is_premium)
                     }
-                    className={`w-full ${
-                      plan.id === "free"
-                        ? "bg-gray-500"
-                        : plan.price === 0
+                    className={`w-full ${plan.id === "free"
+                      ? "bg-gray-500"
+                      : plan.price === 0
                         ? "bg-accent hover:bg-accent/90"
                         : "bg-gradient-to-r from-primary to-accent hover:from-primary/90 hover:to-accent/90"
-                    }`}
+                      }`}
                   >
                     {isLoading ? (
                       "Processing..."

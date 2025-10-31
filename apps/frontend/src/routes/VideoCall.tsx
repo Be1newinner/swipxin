@@ -1,14 +1,13 @@
-// File: screens/VideoCall.tsx
 import { useState, useEffect, useMemo, useRef } from "react";
 import { Button } from "../components/ui/button.js";
 import { Badge } from "../components/ui/badge.js";
 import { Card } from "../components/ui/card.js";
 import { Search, Users, Coins, Video, Phone } from "lucide-react";
 import { toast } from "sonner";
-import IsolatedMatchingService from "../lib/isolatedMatching.js";
+import IsolatedMatchingService from "../lib/isolatedMatching";
 import VideoChat from "../components/VideoChat.js";
 import { useAppStore } from "@/store/useAppStore.js";
-import { useAppNavigation } from "@/components/utils/navigateHook.js";
+import { useAppNavigation } from "@/components/utils/navigateHook";
 
 // ===== Domain types =====
 type Partner = {
@@ -100,15 +99,15 @@ export function VideoCall() {
   // Hold stable refs for callbacks to avoid stale closures in async listeners
   const onEndCallRef = useRef<(duration?: number) => void>(null);
   onEndCallRef.current = () =>
-    // duration = 0
-    {
-      setCurrentMatch(null);
-      setIsInVideoChat(false);
-      setIsSearchingMatch(false);
-      // if (duration > 0 && onDurationUpdate) onDurationUpdate(0);
-      void loadOnlineUsersCount();
-      toast.success("Call ended. Ready for your next chat!");
-    };
+  // duration = 0
+  {
+    setCurrentMatch(null);
+    setIsInVideoChat(false);
+    setIsSearchingMatch(false);
+    // if (duration > 0 && onDurationUpdate) onDurationUpdate(0);
+    void loadOnlineUsersCount();
+    toast.success("Call ended. Ready for your next chat!");
+  };
 
   // ===== Lifecycle: mount/cleanup =====
   useEffect(() => {
