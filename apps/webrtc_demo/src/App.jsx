@@ -1,140 +1,231 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useRef, useState, useEffect } from "react";
 
 export default function App() {
   const localVideoRef = useRef();
   const remoteVideoRef = useRef();
   const pcRef = useRef(null);
-  const [offerSDP, setOfferSDP] = useState("");
-  const [answerSDP, setAnswerSDP] = useState("");
+  const wsRef = useRef(null);
 
-  useEffect(() => {
-    console.log(offerSDP);
-  }, [offerSDP]);
+  const [clientId] = useState(() => Math.random().toString(36).substr(2, 9));
+  const [targetId, setTargetId] = useState("");
+  const [isConnected, setIsConnected] = useState(false);
 
-  // Configuration for STUN server (Google's public STUN)
   const configuration = {
     iceServers: [{ urls: "stun:stun.l.google.com:19302" }],
   };
 
-  async function startLocalVideo() {
+  // Connect to signaling server
+  useEffect(() => {
+    wsRef.current = new WebSocket("ws://192.168.0.128:3001");
+
+    wsRef.current.onopen = () => {
+      console.log("Connected to signaling server");
+      wsRef.current.send(
+        JSON.stringify({
+          type: "register",
+          clientId,
+        })
+      );
+    };
+
+    wsRef.current.onmessage = async (event) => {
+      const message = JSON.parse(event.data);
+
+      switch (message.type) {
+        case "offer":
+          await handleOffer(message.data, message.from);
+          break;
+        case "answer":
+          await handleAnswer(message.data);
+          break;
+        case "ice-candidate":
+          await handleIceCandidate(message.data);
+          break;
+      }
+    };
+
+    return () => wsRef.current?.close();
+  }, [clientId]);
+
+  async function startCall() {
+    if (!targetId) return alert("Enter target peer ID");
+
+    // Get local media
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
     });
     localVideoRef.current.srcObject = stream;
 
-    // Prepare RTCPeerConnection and add tracks
+    // Setup peer connection
     pcRef.current = new RTCPeerConnection(configuration);
-    stream
-      .getTracks()
-      .forEach((track) => pcRef.current.addTrack(track, stream));
 
-    // When remote track arrives, show it in remote video element
+    stream.getTracks().forEach((track) => {
+      pcRef.current.addTrack(track, stream);
+    });
+
     pcRef.current.ontrack = (event) => {
       remoteVideoRef.current.srcObject = event.streams[0];
     };
 
-    // ICE candidates are generated here, but since local manual signaling, they are ignored for brevity
+    pcRef.current.onicecandidate = (event) => {
+      if (event.candidate) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "ice-candidate",
+            target: targetId,
+            data: event.candidate,
+          })
+        );
+      }
+    };
+
+    // Create and send offer
+    const offer = await pcRef.current.createOffer();
+    await pcRef.current.setLocalDescription(offer);
+
+    wsRef.current.send(
+      JSON.stringify({
+        type: "offer",
+        target: targetId,
+        data: offer,
+      })
+    );
   }
 
-  // Caller creates offer and sets local description
-  async function createOffer() {
-    const pc = pcRef.current;
-    if (!pc) return alert("Start local video first");
-
-    const offer = await pc.createOffer();
-    await pc.setLocalDescription(offer);
-    setOfferSDP(JSON.stringify(pc.localDescription));
-  }
-
-  // Callee sets remote offer, creates answer, and sets local description
-  async function handleOfferAndCreateAnswer() {
-    const pc = new RTCPeerConnection(configuration);
-    pcRef.current = pc;
-
-    // Get local stream and add tracks to peer connection
+  async function handleOffer(offer, from) {
+    // Get local media
     const stream = await navigator.mediaDevices.getUserMedia({
       video: true,
       audio: true,
     });
     localVideoRef.current.srcObject = stream;
-    stream.getTracks().forEach((track) => pc.addTrack(track, stream));
 
-    // When remote track arrives, set it to remote video
-    pc.ontrack = (event) => {
+    // Setup peer connection
+    pcRef.current = new RTCPeerConnection(configuration);
+
+    stream.getTracks().forEach((track) => {
+      pcRef.current.addTrack(track, stream);
+    });
+
+    pcRef.current.ontrack = (event) => {
       remoteVideoRef.current.srcObject = event.streams[0];
+      setIsConnected(true);
     };
 
-    // Set remote description from offer SDP
-    const offer = JSON.parse(offerSDP);
-    await pc.setRemoteDescription(offer);
+    pcRef.current.onicecandidate = (event) => {
+      if (event.candidate) {
+        wsRef.current.send(
+          JSON.stringify({
+            type: "ice-candidate",
+            target: from,
+            data: event.candidate,
+          })
+        );
+      }
+    };
 
-    // Create answer and set local description
-    const answer = await pc.createAnswer();
-    await pc.setLocalDescription(answer);
-    setAnswerSDP(JSON.stringify(pc.localDescription));
+    // Set remote offer and create answer
+    await pcRef.current.setRemoteDescription(offer);
+    const answer = await pcRef.current.createAnswer();
+    await pcRef.current.setLocalDescription(answer);
+
+    wsRef.current.send(
+      JSON.stringify({
+        type: "answer",
+        target: from,
+        data: answer,
+      })
+    );
+
+    setTargetId(from);
+    setIsConnected(true);
   }
 
-  // Caller sets remote answer SDP
-  async function handleAnswer() {
-    const pc = pcRef.current;
-    if (!pc) return alert("Create offer first");
+  async function handleAnswer(answer) {
+    await pcRef.current.setRemoteDescription(answer);
+    setIsConnected(true);
+  }
 
-    const answer = JSON.parse(answerSDP);
-    await pc.setRemoteDescription(answer);
+  async function handleIceCandidate(candidate) {
+    await pcRef.current?.addIceCandidate(candidate);
+  }
+
+  function endCall() {
+    pcRef.current?.close();
+    pcRef.current = null;
+    if (localVideoRef.current?.srcObject) {
+      localVideoRef.current.srcObject.getTracks().forEach((t) => t.stop());
+    }
+    setIsConnected(false);
   }
 
   return (
-    <div style={{ padding: 20 }}>
-      <h2>Basic WebRTC Video Call (Manual Signaling)</h2>
+    <div style={{ padding: 20, fontFamily: "Arial" }}>
+      <h2>WebRTC Video Call with Auto Signaling</h2>
 
-      <div>
-        <video
-          ref={localVideoRef}
-          autoPlay
-          playsInline
-          muted
-          style={{ width: 240, border: "1px solid black" }}
-        />
-        <video
-          ref={remoteVideoRef}
-          autoPlay
-          playsInline
-          style={{ width: 240, border: "1px solid black", marginLeft: 20 }}
-        />
+      <div
+        style={{
+          marginBottom: 20,
+          padding: 10,
+          background: "#50bb55",
+          borderRadius: 5,
+        }}
+      >
+        <strong>Your ID:</strong> {clientId}
       </div>
 
-      <button onClick={startLocalVideo} style={{ marginTop: 20 }}>
-        Start Local Video
-      </button>
-
-      <div style={{ marginTop: 20 }}>
-        <button onClick={createOffer}>Create Offer (Caller)</button>
-      </div>
-
-      <textarea
-        style={{ width: "100%", height: 100, marginTop: 10 }}
-        value={offerSDP}
-        onChange={(e) => setOfferSDP(e.target.value)}
-        placeholder="Offer SDP"
-      />
-
-      <div>
-        <button onClick={handleOfferAndCreateAnswer}>
-          Set Offer and Create Answer (Callee)
+      <div style={{ marginBottom: 20 }}>
+        <input
+          type="text"
+          placeholder="Enter peer ID to call"
+          value={targetId}
+          onChange={(e) => setTargetId(e.target.value)}
+          style={{ padding: 8, width: 300, marginRight: 10 }}
+        />
+        <button
+          onClick={startCall}
+          disabled={isConnected}
+          style={{ padding: 8 }}
+        >
+          Start Call
+        </button>
+        <button
+          onClick={endCall}
+          disabled={!isConnected}
+          style={{ padding: 8, marginLeft: 10 }}
+        >
+          End Call
         </button>
       </div>
 
-      <textarea
-        style={{ width: "100%", height: 100, marginTop: 10 }}
-        value={answerSDP}
-        onChange={(e) => setAnswerSDP(e.target.value)}
-        placeholder="Answer SDP"
-      />
-
-      <div>
-        <button onClick={handleAnswer}>Set Answer (Caller)</button>
+      <div style={{ display: "flex", gap: 20 }}>
+        <div>
+          <h4>Local Video</h4>
+          <video
+            ref={localVideoRef}
+            autoPlay
+            playsInline
+            muted
+            style={{ width: 320, border: "2px solid #333", borderRadius: 8 }}
+          />
+        </div>
+        <div>
+          <h4>Remote Video</h4>
+          <video
+            ref={remoteVideoRef}
+            autoPlay
+            playsInline
+            style={{ width: 320, border: "2px solid #333", borderRadius: 8 }}
+          />
+        </div>
       </div>
+
+      {isConnected && (
+        <div style={{ marginTop: 20, color: "green", fontWeight: "bold" }}>
+          ✓ Connected
+        </div>
+      )}
     </div>
   );
 }
