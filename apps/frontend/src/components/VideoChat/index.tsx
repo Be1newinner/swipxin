@@ -95,7 +95,7 @@ export function VideoChat({ match, currentUser, onEndCall }: VideoChatProps) {
 
   return (
     <LiveKitRoom
-      serverUrl={ENVIRONMENTS.LIVEKIT_URL || "ws://localhost:7880"}
+      serverUrl={ENVIRONMENTS.LIVEKIT_URL}
       token={livekitToken}
       connect={true}
       onDisconnected={(reason) => {

@@ -20,8 +20,8 @@ router.post("/token", async (req, res) => {
         console.log("🔑 Generating token...");
 
         const token = new AccessToken(
-            "devkey",
-            "secret",
+            process.env.LIVEKIT_API_KEY,
+            process.env.LIVEKIT_API_SECRET,
             {
                 identity: participantId,
                 name: participantName,
