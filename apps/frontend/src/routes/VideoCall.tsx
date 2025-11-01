@@ -5,7 +5,7 @@ import { Card } from "../components/ui/card.js";
 import { Search, Users, Coins, Video, Phone } from "lucide-react";
 import { toast } from "sonner";
 import IsolatedMatchingService from "../lib/isolatedMatching";
-import VideoChat from "../components/VideoChat.js";
+import VideoChat from "../components/VideoChat";
 import { useAppStore } from "@/store/useAppStore.js";
 import { useAppNavigation } from "@/components/utils/navigateHook";
 
