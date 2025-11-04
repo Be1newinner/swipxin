@@ -255,36 +255,36 @@ export default function VideoCallUI({ currentUser, partner, matchId, onEndCall }
                 </div>
 
                 {/* Controls */}
-                <div className={`absolute bottom-0 left-0 right-0 p-6 bg-linear-to-t from-black/90 to-transparent transition-opacity z-10 ${showControls ? "opacity-100" : "opacity-0"}`}>
+                <div className={`absolute bottom-0 left-0 right-0 p-6 bg-linear-to-t from-black/90 to-transparent transition-opacity z-10 w-full ${showControls ? "opacity-100" : "opacity-0"}`}>
                     <div className="flex justify-center items-center gap-4">
                         <Button
                             onClick={toggleAudio}
-                            className={`rounded-full w-14 h-14 ${localParticipant.isMicrophoneEnabled ? "bg-white/20" : "bg-red-500"}`}
+                            className={`rounded-full w-8 h-8 ${localParticipant.isMicrophoneEnabled ? "bg-white/20" : "bg-red-500"}`}
                         >
                             {localParticipant.isMicrophoneEnabled ? <MicrophoneIcon /> : <MicrophoneOffIcon />}
                         </Button>
 
                         <Button
                             onClick={toggleVideo}
-                            className={`rounded-full w-14 h-14 ${localParticipant.isCameraEnabled ? "bg-white/20" : "bg-red-500"}`}
+                            className={`rounded-full w-8 h-8 ${localParticipant.isCameraEnabled ? "bg-white/20" : "bg-red-500"}`}
                         >
                             {localParticipant.isCameraEnabled ? <CameraIcon /> : <CameraOffIcon />}
                         </Button>
 
-                        <Button onClick={handleNextMatch} disabled={isSkipping} className="rounded-full w-14 h-14 bg-blue-500">
+                        <Button onClick={handleNextMatch} disabled={isSkipping} className="rounded-full w-8 h-8 bg-blue-500">
                             {isSkipping ? <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin" /> : <SkipForward />}
                         </Button>
 
-                        <Button onClick={handleEndCall} className="rounded-full w-16 h-16 bg-red-500">
+                        <Button onClick={handleEndCall} className="rounded-full w-10 h-10 bg-red-500">
                             <PhoneEndIcon />
                         </Button>
 
-                        <Button onClick={() => setShowChat(!showChat)} className="rounded-full w-14 h-14 bg-white/20 relative">
+                        <Button onClick={() => setShowChat(!showChat)} className="rounded-full w-8 h-8 bg-white/20 relative">
                             <ChatIcon />
                             {unreadCount > 0 && <Badge className="absolute -top-2 -right-2 bg-red-500 px-2 py-1 text-xs">{unreadCount}</Badge>}
                         </Button>
 
-                        <Button onClick={toggleFullscreen} className="rounded-full w-14 h-14 bg-white/20">
+                        <Button onClick={toggleFullscreen} className="rounded-full w-8 h-8 bg-white/20">
                             {isFullscreen ? <FullscreenExitIcon /> : <FullscreenEnterIcon />}
                         </Button>
                     </div>

@@ -384,7 +384,7 @@ export function VideoCall() {
       {/* Header */}
       <div className="flex items-center justify-between p-4 border-b border-slate-300 bg-white">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center">
+          <div className="w-10 h-10 bg-linear-to-br from-primary to-accent rounded-full flex items-center justify-center">
             <Video className="w-5 h-5 text-white" />
           </div>
           <div>
@@ -414,7 +414,7 @@ export function VideoCall() {
           <Card className="glass p-6 text-center bg-white border-none">
             {isSearchingMatch ? (
               <div className="space-y-4">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto animate-pulse">
+                <div className="w-20 h-20 bg-linear-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto animate-pulse">
                   <Search className="w-10 h-10 animate-bounce text-black" />
                 </div>
                 <div>
@@ -441,7 +441,7 @@ export function VideoCall() {
               </div>
             ) : (
               <div className="space-y-4">
-                <div className="w-20 h-20 bg-gradient-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto">
+                <div className="w-20 h-20 bg-linear-to-br from-primary to-accent rounded-full flex items-center justify-center mx-auto">
                   <Phone className="w-10 h-10" />
                 </div>
                 <div>
@@ -500,7 +500,7 @@ export function VideoCall() {
           {user.tokens < 1 && (
             <Card className="glass p-4 border-slate-300 bg-white text-red-500 font-bold">
               <div className="flex items-start gap-3">
-                <Coins className="w-5 h-5  flex-shrink-0 mt-0.5" />
+                <Coins className="w-5 h-5  shrink-0 mt-0.5" />
                 <div className="text-sm">
                   <p className="font-medium">No tokens remaining</p>
                   <p>

@@ -102,7 +102,10 @@ export function VideoChat({ match, currentUser, onEndCall }: VideoChatProps) {
         console.log("Disconnected:", reason);
         onEndCall(0);
       }}
-      style={{ height: "100vh", width: "100vw" }}
+      // style={{ height: "100svh", width: "100svw" }}
+      className="h-screen w-screen"
+      audio={true}
+      video={true}
     >
       <VideoCallUI
         match={match}
